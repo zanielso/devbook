@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strconv"
 
@@ -21,9 +22,10 @@ func Load() {
 	}
 
 	Porta, error = strconv.Atoi(os.Getenv("API_PORT"))
-	// TODO - PUT RADOM PORT
 	if error != nil {
-		Porta = 9000
+		min := 8000
+		max := 9990
+		Porta = rand.Intn(max-min) + min
 	}
 
 	StrinDataBaseConnection = fmt.Sprintf("%s:%s@/%s?charset=utf8&parseTime=True&loc=Local",
