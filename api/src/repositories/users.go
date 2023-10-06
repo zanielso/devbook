@@ -102,3 +102,20 @@ func (repository Users) FindAll(nameOrNick string) ([]models.User, error) {
 	}
 	return users, nil
 }
+
+func (repository Users) Delete(userId uint64) error {
+	statement, error := repository.db.Prepare(
+		"delete from users where id = ?",
+	)
+	if error != nil {
+		return error
+	}
+	defer statement.Close()
+
+	if _, error := statement.Exec(userId); error != nil {
+		return error
+	}
+
+	return nil
+
+}
