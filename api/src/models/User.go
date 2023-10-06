@@ -1,9 +1,12 @@
 package models
 
 import (
+	"api/src/security"
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/badoux/checkmail"
 )
 
 type User struct {
@@ -16,17 +19,25 @@ type User struct {
 }
 
 func (user *User) FormatAndValidate(operation string) error {
-	user.format()
+	user.format(operation)
 	if error := user.validate(operation); error != nil {
 		return error
 	}
 	return nil
 }
 
-func (user *User) format() {
+func (user *User) format(operation string) error {
 	user.Name = strings.TrimSpace(user.Name)
 	user.Nick = strings.TrimSpace(user.Nick)
 	user.Email = strings.TrimSpace(user.Email)
+	if operation == "create" {
+		passwordHash, error := security.GeneratedHash(user.Password)
+		if error != nil {
+			return error
+		}
+		user.Password = string(passwordHash)
+	}
+	return nil
 }
 
 func (user *User) validate(operation string) error {
@@ -38,6 +49,9 @@ func (user *User) validate(operation string) error {
 	}
 	if user.Email == "" {
 		return errors.New("The email is mandatory e cannot be empty or blank")
+	}
+	if error := checkmail.ValidateFormat(user.Email); error != nil {
+		return error
 	}
 	if operation == "create" && user.Password == "" {
 		return errors.New("The password is mandatory e cannot be empty or blank")
