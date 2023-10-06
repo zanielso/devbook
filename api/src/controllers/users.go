@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -79,7 +80,24 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func FindAll(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("All users"))
+	nameOrNick := strings.ToLower(r.URL.Query().Get("user"))
+
+	db, error := database.Connect()
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUsersReposiotry(db)
+	users, error := repository.FindAll(nameOrNick)
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, users)
+
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) {

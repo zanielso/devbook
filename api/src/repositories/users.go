@@ -3,6 +3,7 @@ package repositories
 import (
 	"api/src/models"
 	"database/sql"
+	"fmt"
 )
 
 type Users struct {
@@ -36,7 +37,7 @@ func (repository Users) Create(user models.User) (uint64, error) {
 }
 
 func (repository Users) FindById(userId uint) (models.User, error) {
-	rows, error := repository.db.Query("select id, name, nick , email, createdAt  from users u where id = ?", userId)
+	rows, error := repository.db.Query("select id, name, nick , email, createdAt from users u where id = ?", userId)
 	if error != nil {
 		return models.User{}, error
 	}
@@ -56,4 +57,31 @@ func (repository Users) FindById(userId uint) (models.User, error) {
 		}
 	}
 	return user, nil
+}
+
+func (repository Users) FindAll(nameOrNick string) ([]models.User, error) {
+	nameOrNick = fmt.Sprintf("%%%s%%", nameOrNick) // %nameOrNick%
+	rows, error := repository.db.Query(
+		"select id, name, nick , email, createdAt from users where name like ? or nick like ?", nameOrNick, nameOrNick)
+	if error != nil {
+		return nil, error
+	}
+	defer rows.Close()
+
+	var users []models.User
+
+	for rows.Next() {
+		var user models.User
+		if error = rows.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedAt,
+		); error != nil {
+			return nil, error
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
