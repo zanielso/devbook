@@ -6,7 +6,7 @@ import (
 	"api/src/repositories"
 	"api/src/responses"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,7 +15,7 @@ import (
 )
 
 func Create(w http.ResponseWriter, r *http.Request) {
-	requestBody, error := ioutil.ReadAll(r.Body)
+	requestBody, error := io.ReadAll(r.Body)
 
 	if error != nil {
 		responses.Error(w, http.StatusUnprocessableEntity, error)
@@ -28,7 +28,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if error := user.FormatAndValidate(); error != nil {
+	if error := user.FormatAndValidate("create"); error != nil {
 		responses.Error(w, http.StatusBadRequest, error)
 		return
 	}
@@ -51,7 +51,46 @@ func Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func Update(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Updating user"))
+	parameters := mux.Vars(r)
+	userId, error := strconv.ParseUint(parameters["userId"], 10, 64)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	requestBody, error := io.ReadAll(r.Body)
+
+	if error != nil {
+		responses.Error(w, http.StatusUnprocessableEntity, error)
+		return
+	}
+
+	var user models.User
+	if error = json.Unmarshal(requestBody, &user); error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	if error := user.FormatAndValidate("update"); error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	db, error := database.Connect()
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUsersReposiotry(db)
+	error = repository.Update(userId, user)
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {

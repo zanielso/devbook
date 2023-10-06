@@ -15,9 +15,9 @@ type User struct {
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 
-func (user *User) FormatAndValidate() error {
+func (user *User) FormatAndValidate(operation string) error {
 	user.format()
-	if error := user.validate(); error != nil {
+	if error := user.validate(operation); error != nil {
 		return error
 	}
 	return nil
@@ -29,7 +29,7 @@ func (user *User) format() {
 	user.Email = strings.TrimSpace(user.Email)
 }
 
-func (user *User) validate() error {
+func (user *User) validate(operation string) error {
 	if user.Name == "" {
 		return errors.New("The name is mandatory e cannot be empty or blank")
 	}
@@ -39,7 +39,7 @@ func (user *User) validate() error {
 	if user.Email == "" {
 		return errors.New("The email is mandatory e cannot be empty or blank")
 	}
-	if user.Password == "" {
+	if operation == "create" && user.Password == "" {
 		return errors.New("The password is mandatory e cannot be empty or blank")
 	}
 	return nil

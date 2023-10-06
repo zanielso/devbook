@@ -36,6 +36,23 @@ func (repository Users) Create(user models.User) (uint64, error) {
 
 }
 
+func (repository Users) Update(userId uint64, user models.User) error {
+	statement, error := repository.db.Prepare(
+		"update users set name = ?, nick = ?, email = ? where id = ?",
+	)
+	if error != nil {
+		return error
+	}
+	defer statement.Close()
+
+	if _, error := statement.Exec(user.Name, user.Nick, user.Email, userId); error != nil {
+		return error
+	}
+
+	return nil
+
+}
+
 func (repository Users) FindById(userId uint) (models.User, error) {
 	rows, error := repository.db.Query("select id, name, nick , email, createdAt from users u where id = ?", userId)
 	if error != nil {
